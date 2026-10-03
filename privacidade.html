@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!-- desenvolvido por CamilaLeite (Humana Camila) para EBAT - Escola Brasileira de Arte e Tecnologia -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacidade | Fliperama EBAT</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+  body{margin:0;background:#0B0720;color:#E4DCF7;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:640px;margin:0 auto;padding:28px 20px 56px}
+  h1{font-size:22px;color:#fff;margin:0 0 6px}
+  h2{font-size:16px;color:#F82CED;margin:28px 0 6px}
+  p,li{margin:0 0 10px}
+  a{color:#35C3FF}
+  .back{display:inline-block;margin-bottom:18px;font-size:14px}
+  small{color:#9093A2}
+  .ckb{min-height:42px;padding:0 16px;margin:0 8px 8px 0;border-radius:9px;border:2px solid #F82CED;background:transparent;color:#F4E9FF;font:700 14px system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+  .ckb-y{background:#F82CED;color:#12081F}
+  .ckb:focus-visible{outline:3px solid #35C3FF;outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">&larr; Voltar ao Fliperama EBAT</a>
+  <h1>Privacidade</h1>
+  <p>O Fliperama EBAT é um espaço de jogos e atividades criativas da EBAT - Escola Brasileira de Arte e Tecnologia. Não tem cadastro, login nem anúncios.</p>
+
+  <h2>O que fica só no seu aparelho</h2>
+  <p>O nome que você digita, o nome das suas obras, seus recordes e suas preferências ficam guardados apenas no seu próprio aparelho. Eles não são enviados para a EBAT nem para nenhuma ferramenta de estatística.</p>
+
+  <h2>O que medimos</h2>
+  <p>Usamos uma ferramenta de estatísticas para entender como o Fliperama é usado, sempre de forma anônima e somada com a de outras pessoas:</p>
+  <ul>
+    <li>quantas pessoas acessam e por qual material chegaram (por exemplo, um QR Code);</li>
+    <li>quais telas, jogos e atividades são abertas e por quanto tempo;</li>
+    <li>quais jogos e atividades são mais usados e se as cartas são salvas ou compartilhadas;</li>
+    <li>dados técnicos gerais, como tipo de aparelho e país, fornecidos pela própria ferramenta.</li>
+  </ul>
+  <p>Não coletamos seu nome, as suas criações, imagens, vídeos nem a sua localização exata, e não usamos esses dados para publicidade.</p>
+
+  <h2>Cookies</h2>
+  <p>A ferramenta de estatísticas (Google Analytics) usa cookies para reconhecer que o mesmo aparelho voltou. Eles só são criados <b>se você aceitar</b> no aviso que aparece na primeira visita. Se você recusar, nada é medido e esses cookies não são criados. Não usamos cookies de publicidade.</p>
+  <p id="ck-status"><small>Sua escolha atual: <span id="ck-now">ainda não escolhida</span>.</small></p>
+  <p>
+    <button type="button" id="ck-yes" class="ckb ckb-y">Aceitar cookies</button>
+    <button type="button" id="ck-no" class="ckb">Recusar cookies</button>
+  </p>
+
+  <h2>Não quer ser medido?</h2>
+  <p>Se o seu navegador estiver com a opção "Não rastrear" ligada, respeitamos o pedido e nada é medido.</p>
+
+  <h2>Contato</h2>
+  <p>Dúvidas sobre esta página: <a href="https://ebat.com.br">ebat.com.br</a> ou <a href="https://www.instagram.com/escola.ebat/">@escola.ebat</a>.</p>
+  <p><small>Atualizado em outubro de 2026 (inclui o aviso de cookies).</small></p>
+</main>
+<script>
+(function () {
+  var K = 'ebat_cookies', now = document.getElementById('ck-now');
+  function get() { try { var v = localStorage.getItem(K); return v === 'granted' || v === 'denied' ? v : null; } catch (e) { return null; } }
+  function clearGa() {
+    var host = location.hostname, parts = host.split('.'), doms = ['', host], i;
+    for (i = 1; i < parts.length - 1; i++) doms.push('.' + parts.slice(i).join('.'));
+    document.cookie.split(';').forEach(function (c) {
+      var n = c.split('=')[0].trim();
+      if (n !== '_ga' && n.indexOf('_ga_') !== 0 && n !== '_gid' && n.indexOf('_gat') !== 0) return;
+      doms.forEach(function (d) { document.cookie = n + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/' + (d ? '; domain=' + d : ''); });
+    });
+  }
+  function show() { var v = get(); now.textContent = v === 'granted' ? 'cookies aceitos' : v === 'denied' ? 'cookies recusados' : 'ainda não escolhida'; }
+  function set(v) { try { localStorage.setItem(K, v); } catch (e) {} if (v === 'denied') clearGa(); show(); }
+  document.getElementById('ck-yes').addEventListener('click', function () { set('granted'); });
+  document.getElementById('ck-no').addEventListener('click', function () { set('denied'); });
+  show();
+})();
+</script>
+</body>
+</html>
