@@ -1420,7 +1420,7 @@
     q.o.forEach(function (txt, i) { var b = el('button', null, 'opt'); b.appendChild(el('span', 'ABC'.charAt(i), 'ol')); b.appendChild(el('span', txt, 'ot')); b.setAttribute('data-k', 'abc'.charAt(i)); b.addEventListener('click', function () { answer(q, i); }); opts.appendChild(b); });
     var nodes0 = [el('div', 'Moeda especial', 'ov-kicker'), h];
     clearInterval(qTimer); qTimer = null;
-    if (prevState === 'running') {
+    {
       var tm = el('div', null, 'qtimer'), bar = el('div', null, 'qt-bar'), fill = el('div', null, 'qt-fill'), num = el('span', String(QSECS), 'qt-n'), t0 = performance.now();
       bar.appendChild(fill); tm.appendChild(bar); tm.appendChild(num); nodes0.push(tm);
       qTimer = setInterval(function () {
