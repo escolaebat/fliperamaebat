@@ -11,7 +11,10 @@ Jogos e atividades criativas da EBAT - Escola Brasileira de Arte e Tecnologia. �
 | `analytics.js` | Envia os eventos para a ferramenta escolhida. Não precisa mexer. |
 | `privacidade.html` | Página de privacidade, ligada no rodapé do site. |
 | `404.html`, `.nojekyll` | Página de erro e ajuste do GitHub Pages. |
-| `favicon.png`, `apple-touch-icon.png`, `icon-*.png` | Ícones. |
+| `favicon.svg`, `favicon.ico`, `favicon*.png` | Ícone da aba do navegador e do Google: a palavra EBAT (EB em cima, AT embaixo) com fundo transparente. |
+| `apple-touch-icon.png`, `icon-*.png` | Ícones de tela inicial do celular, com fundo escuro (o iPhone não aceita fundo transparente). |
+| `og-image.jpg` | Miniatura que aparece quando o link é compartilhado (WhatsApp, Instagram, Telegram, redes). |
+| `robots.txt`, `sitemap.xml`, `llms.txt` | Ajudam o Google e as IAs (ChatGPT, Gemini, Claude...) a entender e indicar o site. |
 
 ## Publicar no GitHub Pages
 
@@ -37,7 +40,7 @@ Nada pessoal é enviado: nem o nome digitado, nem o nome das obras. Se o navegad
 
 ## O que é medido
 
-**Telas** (aparecem como páginas visitadas, mostrando a navegação): `/jogos`, `/laboratorio`, `/sobre`, `/jogo/corre-criativo`, `/jogo/batalha-nave`, `/jogo/torre-criativa`, `/jogo/corrida-neon`, `/jogo/traco`, `/jogo/quebra-pixel`, `/laboratorio/codigo-que-anima`, `/laboratorio/binario-do-nome`, `/laboratorio/pixel-studio`, `/laboratorio/mixer-de-luz`.
+**Telas** (aparecem como páginas visitadas, mostrando a navegação): `/jogos`, `/laboratorio`, `/sobre`, `/jogo/corre-criativo`, `/jogo/batalha-nave`, `/jogo/torre-criativa`, `/jogo/corrida-neon`, `/jogo/traco`, `/jogo/quebra-pixel`, `/laboratorio/oficina-de-vj`, `/laboratorio/binario-do-nome`, `/laboratorio/pixel-studio`, `/laboratorio/mixer-de-luz`.
 
 **Eventos:**
 
@@ -72,6 +75,10 @@ Troque só o final de `utm_campaign` para cada material (`folder-familias`, `con
 Troque o `index.html` no repositório (**Add file > Upload files** com o mesmo nome) e faça o commit. O endereço continua o mesmo.
 
 ## Antes de divulgar
+
+- **Miniatura do link**: depois de publicar, cole o endereço no [Depurador de Compartilhamento da Meta](https://developers.facebook.com/tools/debug/) e clique em "Buscar novamente" para limpar o cache. Se alguém já compartilhou o link antes da imagem existir, o WhatsApp e o Instagram podem guardar a versão antiga por alguns dias.
+- **Google**: no [Search Console](https://search.google.com/search-console), adicione a propriedade de domínio `ebat.com.br` (cobre o subdomínio `fliperama`) e envie o `sitemap.xml`.
+- No site principal (`ebat.com.br`), vale colocar um link para `fliperama.ebat.com.br` com texto como "Jogue o Fliperama EBAT": ajuda o Google a ligar os dois.
 
 - Leia a `privacidade.html` e ajuste se a ferramenta escolhida coletar algo além do descrito. Como o público inclui estudantes, vale uma conferência com quem cuida da LGPD na EBAT.
 - Salvar e compartilhar cartas usa a folha de compartilhamento do celular. Teste em um Android e um iPhone.

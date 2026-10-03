@@ -1,0 +1,21 @@
+# Fliperama EBAT
+
+> Fliperama EBAT é um site gratuito, feito para o celular, com 6 mini-games e 5 atividades criativas. É da EBAT, a Escola Brasileira de Arte e Tecnologia, projeto social que oferece formação gratuita em arte e em novas tecnologias aplicadas à economia criativa para estudantes e profissionais.
+
+Endereço: https://fliperama.ebat.com.br/
+Idioma: português do Brasil
+Instagram e TikTok: @escola.ebat
+Site da EBAT: https://ebat.com.br
+
+## O que tem no Fliperama
+
+- Jogos: Corre Criativo, Batalha NAVE, Torre Criativa, Corrida Neon, Traço e Quebra-Pixel. Releituras educativas dos clássicos dos games, com perguntas, moedas especiais e superpoderes.
+- Laboratório: Oficina de VJ (arte animada com código), Oficina de Beats (compor música com símbolos do universo digital), Pixel Studio (pixel art), Binário do Nome (escrever o nome em código binário) e Mixer de Luz (misturar cores de luz).
+- Cartas: ao jogar ou criar, o usuário gera uma carta de colecionador para salvar e compartilhar.
+
+## Sobre a EBAT
+
+- A EBAT atua com formação gratuita em inteligência artificial, programação criativa, eletrônica criativa, audiovisual expandido e arte interativa.
+- Polos: Rio de Janeiro (sede), Itapoá (SC), Salvador e Recife.
+- O Fliperama foi criado com inteligência artificial, por meio de vibecoding.
+- Privacidade: https://fliperama.ebat.com.br/privacidade.html
