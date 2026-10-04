@@ -383,12 +383,22 @@
   .bt-ghost { position: fixed; left: 0; top: 0; width: 40px; height: 40px; z-index: 300; pointer-events: none; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 8px var(--gc, #fff)) drop-shadow(0 4px 6px rgba(0,0,0,.5)); will-change: transform; }
   .bt-ghost canvas { width: 36px; height: 36px; image-rendering: pixelated; }
   .bt-stage { position: relative; }
+  .bt-dups { position: absolute; left: 0; top: 0; height: 22px; width: 0; pointer-events: none; z-index: 3; }
+  .bt-dup { position: absolute; top: 2px; width: 24px; height: 18px; padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #BFEFFF; background: rgba(53,195,255,.14); border: 1.4px solid rgba(53,195,255,.75); border-radius: 5px; box-shadow: 0 0 6px rgba(53,195,255,.5); pointer-events: auto; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .bt-dup::after { content: ''; position: absolute; inset: -5px -4px; }
+  .bt-dup[hidden] { display: none; }
+  .bt-dup svg { width: 12px; height: 12px; }
+  .dup-step { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .dup-step .btn { width: 52px; min-width: 52px; padding: 0; height: 46px; font-size: 24px; line-height: 1; }
+  .dup-step b { font-family: var(--f-pix); font-size: 28px; min-width: 44px; text-align: center; color: #fff; text-shadow: 0 0 8px #F82CED; }
   .bt-selpop { position: absolute; left: 50%; top: calc(50% + 5px); bottom: auto; transform: translate(-50%, -50%); z-index: 20; display: flex; align-items: center; gap: 8px; padding: 8px 10px; max-width: calc(100vw - 20px); white-space: nowrap; background: #120B2A; border: 2px solid #35C3FF; border-radius: 14px; box-shadow: 0 0 14px rgba(53,195,255,.6), 0 8px 24px rgba(0,0,0,.55); }
   .bt-zoom { display: flex; align-items: center; justify-content: center; gap: 1px; color: #CFEFFF; }
   .bt-zoom .btn { min-width: 34px; width: 34px; height: 30px; padding: 0; font-size: 18px; line-height: 1; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
   .bt-zoom .btn:disabled { opacity: .35; }
   .bt-zoom .bt-zico { margin: 0 4px; filter: drop-shadow(0 0 4px rgba(53,195,255,.7)); }
   .bt-selpop[hidden] { display: none; }
+  .bt-selpop [hidden] { display: none !important; }
+  .bt-selpop .bt-x { width: 40px; min-width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   .bt-selpop .bt-selpop-t { font-family: var(--f-pix); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: #CFEFFF; padding: 0 4px; }
   .bt-under { position: relative; min-height: 46px; display: flex; align-items: center; justify-content: center; margin-top: 8px; }
   .bt-under .bt-hint { margin: 0 !important; }
@@ -6079,9 +6089,10 @@
 
   /* ================= OFICINA DE BEATS ================= */
   /* compositor no estilo dos jogos antigos: escolha um símbolo do universo digital e toque na grade para colocar notas (quanto mais alto, mais agudo). Todos os sons são sintetizados na hora. */
-  var BT_STEPS = 64, BT_ROWS = 10, BT_CW = 44, BT_CH = 27, BT_RULER = 16;
+  var BT_STEPS = 64, BT_ROWS = 10, BT_CW = 44, BT_CH = 27, BT_RULER = 22;
   var BT_RF = [880, 783.99, 659.25, 587.33, 523.25, 440, 392, 329.63, 293.66, 261.63]; /* escala pentatônica: de cima (agudo) para baixo (grave) */
-  var BT = { tool: 0, bpm: 110, G: new Uint8Array(BT_STEPS * BT_ROWS), hist: [], playing: false, hide: -1, noClick: false, cur: 0, nextT: 0, tm: 0, raf: 0, q: [], master: null, cv: null, sp: [], sel: -1, sel2: -1, selN: 0, zoom: 0, pinch: false, redo: [] };
+  var btDupBox = null, btPop = null;
+  var BT = { pasteAt: -1, pasteRow: 0, msel: null, mq: null, paste: false, clip: [], tool: 0, bpm: 110, G: new Uint8Array(BT_STEPS * BT_ROWS), hist: [], playing: false, hide: -1, noClick: false, cur: 0, nextT: 0, tm: 0, raf: 0, q: [], master: null, cv: null, sp: [], sel: -1, sel2: -1, selN: 0, zoom: 0, pinch: false, redo: [] };
   function btCtx() { var c = getCtx(); if (!BT.master || BT.master.ctxRef !== c) { var m = c.createGain(), cp = c.createDynamicsCompressor(); m.gain.value = 0.6; cp.threshold.value = -14; cp.ratio.value = 5; m.connect(cp); cp.connect(c.destination); m.ctxRef = c; BT.master = m; } return c; }
   function btNoise(c) { if (!c.__btn) { var b = c.createBuffer(1, c.sampleRate * 2, c.sampleRate), a = b.getChannelData(0), i; for (i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; c.__btn = b; } return c.__btn; }
   /* nota: tipo, frequência (com glissando opcional), duração, volume; vibrato opcional */
@@ -6171,14 +6182,20 @@
       sp = btSprite(v); k = Math.min(Math.floor((BT_CH - 8) / sp.height), Math.floor((BT_CW - 12) / sp.width)); k = Math.max(1, k);
       g2.drawImage(sp, Math.round(x + (BT_CW - sp.width * k) / 2), Math.round(y + (BT_CH - sp.height * k) / 2), sp.width * k, sp.height * k);
     }
+    if (BT.msel) { BT.msel.forEach(function (ix) { var ss = Math.floor(ix / BT_ROWS), rr = ix % BT_ROWS; g2.fillStyle = 'rgba(53,195,255,.28)'; g2.strokeStyle = '#7FE3FF'; g2.lineWidth = 2; g2.beginPath(); g2.roundRect(ss * BT_CW + 1.5, BT_RULER + rr * BT_CH + 1.5, BT_CW - 3, BT_CH - 3, 5); g2.fill(); g2.stroke(); }); }
+    if (BT.pasteAt >= 0 && BT.clip.length) { BT.clip.forEach(function (c) { var ns = BT.pasteAt + c.ds, nr = BT.pasteRow + c.dr; if (ns >= BT_STEPS || nr >= BT_ROWS) return; g2.fillStyle = 'rgba(255,255,255,.16)'; g2.strokeStyle = '#fff'; g2.lineWidth = 1.6; g2.setLineDash([4, 3]); g2.beginPath(); g2.roundRect(ns * BT_CW + 1.5, BT_RULER + nr * BT_CH + 1.5, BT_CW - 3, BT_CH - 3, 5); g2.fill(); g2.stroke(); g2.setLineDash([]); }); }
+    if (BT.mq) { var qx = Math.min(BT.mq.x0, BT.mq.x1), qy = Math.min(BT.mq.y0, BT.mq.y1), qw = Math.abs(BT.mq.x1 - BT.mq.x0), qh = Math.abs(BT.mq.y1 - BT.mq.y0); g2.fillStyle = 'rgba(53,195,255,.14)'; g2.fillRect(qx, qy, qw, qh); g2.strokeStyle = '#35C3FF'; g2.lineWidth = 1.6; g2.setLineDash([6, 4]); g2.strokeRect(qx + 0.5, qy + 0.5, qw, qh); g2.setLineDash([]); }
     if (BT.sel >= 0) { x = BT.sel * 8 * BT_CW; g2.fillStyle = 'rgba(53,195,255,.14)'; g2.fillRect(x, 0, 8 * BT_CW, H); g2.strokeStyle = '#35C3FF'; g2.lineWidth = 2.4; g2.strokeRect(x + 1.2, 1.2, 8 * BT_CW - 2.4, H - 2.4); }
     if (BT.sel2 >= 0) { x = BT.sel2 * 8 * BT_CW; g2.fillStyle = 'rgba(248,44,237,.14)'; g2.fillRect(x, 0, 8 * BT_CW, H); g2.strokeStyle = '#F82CED'; g2.lineWidth = 2.4; g2.setLineDash([6, 4]); g2.strokeRect(x + 1.2, 1.2, 8 * BT_CW - 2.4, H - 2.4); g2.setLineDash([]); }
     if (len < BT_STEPS) { g2.fillStyle = 'rgba(5,3,16,.55)'; g2.fillRect(len * BT_CW, BT_RULER, W - len * BT_CW, H - BT_RULER); g2.strokeStyle = 'rgba(53,195,255,.8)'; g2.setLineDash([5, 4]); g2.lineWidth = 1.5; g2.beginPath(); g2.moveTo(len * BT_CW, 0); g2.lineTo(len * BT_CW, H); g2.stroke(); g2.setLineDash([]); }
+    if (btDupBox) btDupBtns();
   }
   /* toque na grade: coloca, troca ou tira uma nota */
   function btCell(e) {
     if (BT.noClick) return;
     var rc = BT.cv.getBoundingClientRect(), s = Math.floor((e.clientX - rc.left) / BT_CW), r = Math.floor((e.clientY - rc.top - BT_RULER) / BT_CH), i, cur, c;
+    if (BT.paste) { if (s >= 0 && s < BT_STEPS) btPasteAt(s, Math.max(0, Math.min(BT_ROWS - 1, r))); return; }
+    if (BT.msel || BT.pasteAt >= 0) { btSelClose(); return; }
     if (s < 0 || s >= BT_STEPS || r < 0 || r >= BT_ROWS) return; if (BT.tool < 0) return; i = s * BT_ROWS + r; cur = BT.G[i];
     if (BT.tool === BI.length) { if (!cur) return; btPush(); BT.G[i] = 0; }
     else if (cur === BT.tool + 1) { btPush(); BT.G[i] = 0; }
@@ -6333,7 +6350,7 @@
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', cn);
     if (hold) timer = setTimeout(function () { if (!DR) { if (navigator.vibrate) { try { navigator.vibrate(12); } catch (er) {} } drStart(ins, from, last, off); } }, hold);
   }
-  document.addEventListener('touchmove', function (e) { if (DR) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', function (e) { if (DR || (typeof MQ !== 'undefined' && MQ && MQ.on)) e.preventDefault(); }, { passive: false });
   BT.cv.addEventListener('pointerdown', function (e) {
     var rc = BT.cv.getBoundingClientRect(), s = Math.floor((e.clientX - rc.left) / BT_CW), r = Math.floor((e.clientY - rc.top - BT_RULER) / BT_CH), i, v;
     if (s < 0 || s >= BT_STEPS || r < 0 || r >= BT_ROWS) return; i = s * BT_ROWS + r; v = BT.G[i]; if (!v) return;
@@ -6484,44 +6501,164 @@
     w.addEventListener('wheel', function (e) { if (!e.ctrlKey) return; e.preventDefault(); var n = Date.now(); if (n - wt < 220) return; wt = n; btSetZoom(BT.zoom + (e.deltaY > 0 ? 1 : -1)); }, { passive: false });
     window.addEventListener('resize', function () { if (BT.zoom > 0 && !$('#tool-beats').hidden) btSetZoom(BT.zoom); });
   })();
-  var btPop = el('div', null, 'bt-selpop'), btPopT = el('span', '', 'bt-selpop-t');
-  btPop.hidden = true; btPop.setAttribute('role', 'group'); btPop.setAttribute('aria-label', 'Compasso selecionado'); btPop.appendChild(btPopT);
-  btPop.appendChild(btn('Duplicar', 'btn-primary btn-sm', function () { btDup(); }));
-  btPop.appendChild(btn('Fechar', 'btn-ghost btn-sm', function () { btSelClose(); }));
+  /* ---- caixa de seleção: segurar num espaço vazio e arrastar (com o mouse, basta arrastar); depois Copiar e Colar ---- */
+  var MQ = { on: false };
+  btPop = el('div', null, 'bt-selpop'); var btPopT = el('span', '', 'bt-selpop-t');
+  btPop.hidden = true; btPop.setAttribute('role', 'group'); btPop.setAttribute('aria-label', 'Notas selecionadas');
+  var btCopyB = btn('Copiar', 'btn-primary btn-sm', function () { btCopy(); });
+  var btPasteB = btn('Colar', 'btn-ghost btn-sm', function () { if (BT.pasteAt >= 0) btPasteAt(BT.pasteAt, BT.pasteRow); else btPasteMode(); });
+  var btCloseB = btn('Fechar', 'btn-ghost btn-sm', function () { btSelClose(); });
+  btCloseB.classList.add('bt-x'); btCloseB.setAttribute('aria-label', 'Fechar'); btCloseB.title = 'Fechar'; btCloseB.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var btDelB = btn('', 'btn-ghost btn-sm bt-x', function () { btDelAsk(); });
+  btDelB.setAttribute('aria-label', 'Apagar as notas selecionadas'); btDelB.title = 'Apagar as notas selecionadas';
+  btDelB.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.9 12.5h9.2L17.5 7M10 11v5.5M14 11v5.5"/></svg>';
+  btPop.appendChild(btPopT); btPop.appendChild(btCopyB); btPop.appendChild(btPasteB); btPop.appendChild(btDelB); btPop.appendChild(btCloseB);
   $('#bt-stage').appendChild(btPop);
-  function btSelShow() { btPopT.textContent = 'Compasso ' + (BT.sel + 1) + (BT.selN ? ' · ' + BT.selN + (BT.selN === 1 ? ' cópia' : ' cópias') : ''); btPop.hidden = false; }
-  function btSelClose() { if (BT.sel < 0 && BT.sel2 < 0) return; BT.sel = -1; BT.sel2 = -1; BT.selN = 0; btPop.hidden = true; btDraw(); }
-  function btSelOpen(m) { BT.sel = m; BT.sel2 = -1; BT.selN = 0; btSelShow(); btDraw(); tk('beats_compasso', { acao: 'selecionar' }); }
-  /* duplica o compasso selecionado logo depois dele (ou depois da última cópia), empurrando o resto para a frente */
-  function btDup() {
-    var m = BT.sel, st = BT.selN, ins = m + 1 + st, tot = btLen() / 8, S = 8 * BT_ROWS, ng, w = $('#bt-wrap'), x0, x1;
-    if (m < 0) return;
-    if (tot + 1 > BT_STEPS / 8) { toast('O limite é de 8 compassos'); return; }
-    btPush();
-    ng = new Uint8Array(BT.G.length); ng.set(BT.G.subarray(0, ins * S)); ng.set(BT.G.subarray(m * S, (m + 1) * S), ins * S); ng.set(BT.G.subarray(ins * S, (BT_STEPS / 8 - 1) * S), (ins + 1) * S);
-    BT.G = ng; BT.sel = m; BT.sel2 = ins; BT.selN = st + 1; btSelShow();
-    x0 = ins * 8 * BT_CW; x1 = x0 + 8 * BT_CW; if (x1 > w.scrollLeft + w.clientWidth) w.scrollLeft = Math.max(0, x1 - w.clientWidth + 6); else if (x0 < w.scrollLeft) w.scrollLeft = Math.max(0, x0 - 6);
-    btDraw(); btUiState(); tk('beats_compasso', { acao: 'duplicar' });
+  function btSelShow() {
+    var n = BT.msel ? BT.msel.length : 0;
+    btDelB.hidden = !(BT.msel && BT.msel.length && !BT.paste && BT.pasteAt < 0);
+    if (BT.pasteAt >= 0) { btPopT.textContent = 'Colar aqui?'; btCopyB.hidden = true; btPasteB.hidden = false; btPasteB.disabled = false; }
+    else if (BT.paste) { btPopT.textContent = 'Toque na grade onde colar'; btCopyB.hidden = true; btPasteB.hidden = true; }
+    else { btPopT.textContent = n + (n === 1 ? ' nota' : ' notas'); btCopyB.hidden = false; btPasteB.hidden = false; btPasteB.disabled = !BT.clip.length; }
+    btPop.hidden = false;
   }
-  /* segurar o número do compasso, a borda de cima ou um espaço vazio da grade seleciona o compasso */
+  function btSelClose() {
+    if (!(BT.msel || BT.mq || BT.paste || BT.pasteAt >= 0 || BT.sel >= 0 || BT.sel2 >= 0)) return;
+    BT.pasteAt = -1; BT.sel = -1; BT.sel2 = -1; BT.selN = 0; BT.msel = null; BT.mq = null; BT.paste = false; if (btPop) btPop.hidden = true; btDraw();
+  }
+  /* apagar as notas selecionadas: pergunta antes */
+  function btDelAsk() {
+    if (!BT.msel || !BT.msel.length || document.getElementById('confirm-modal')) return;
+    var n = BT.msel.length, ids = BT.msel.slice(), mod = el('div', null, ''); mod.id = 'confirm-modal'; mod.setAttribute('role', 'alertdialog'); mod.setAttribute('aria-modal', 'true'); mod.setAttribute('aria-labelledby', 'confirm-t');
+    var inner = el('div', null, 'inner'), t = el('h3', n === 1 ? 'Apagar a nota selecionada?' : 'Apagar as ' + n + ' notas selecionadas?', 'ov-title'); t.id = 'confirm-t'; inner.appendChild(t);
+    inner.appendChild(el('p', 'Tem certeza? Se mudar de ideia logo depois, o botão Desfazer traz as notas de volta.', 'ov-text mut'));
+    function close() { mod.remove(); document.removeEventListener('keydown', esc, true); }
+    function esc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
+    var cancel = btn('Cancelar', 'btn-primary', close);
+    inner.appendChild(cancel);
+    inner.appendChild(btn('Apagar', 'btn-ghost btn-sm', function () {
+      close(); btPush(); var ng = BT.G.slice(); ids.forEach(function (ix) { ng[ix] = 0; }); BT.G = ng; btStop(); btDraw(); btUiState();
+      toast(n === 1 ? 'Nota apagada' : n + ' notas apagadas'); tk('beats_selecao', { acao: 'apagar', notas: n });
+    }));
+    mod.appendChild(inner); document.body.appendChild(mod); document.addEventListener('keydown', esc, true);
+    setTimeout(function () { try { cancel.focus(); } catch (e) {} }, 60);
+  }
+  function btCopy() {
+    if (!BT.msel || !BT.msel.length) return;
+    var mn = 1e9, mr = 1e9, n = BT.msel.length; BT.msel.forEach(function (ix) { mn = Math.min(mn, Math.floor(ix / BT_ROWS)); mr = Math.min(mr, ix % BT_ROWS); });
+    /* o canto de cima à esquerda da seleção é a referência: ao colar, ele vai para o ponto escolhido */
+    BT.clip = BT.msel.map(function (ix) { return { ds: Math.floor(ix / BT_ROWS) - mn, dr: ix % BT_ROWS - mr, v: BT.G[ix] }; });
+    btSelClose(); toast(n + (n === 1 ? ' nota copiada' : ' notas copiadas') + '. Segure um espaço vazio para colar'); tk('beats_selecao', { acao: 'copiar', notas: n });
+  }
+  function btPasteMode() {
+    if (!BT.clip.length) { toast('Copie algumas notas primeiro'); return; }
+    BT.msel = null; BT.pasteAt = -1; BT.paste = true; btPop.hidden = true; btDraw();
+    toast('Toque na grade onde quer colar');
+    clearTimeout(BT.pasteT); BT.pasteT = setTimeout(function () { if (BT.paste) btSelClose(); }, 9000);
+  }
+  function btPasteAt(s0, r0) {
+    if (!BT.clip.length) { btSelClose(); return; }
+    var lost = 0, put = 0, ng;
+    btPush(); BT.paste = false; ng = BT.G.slice();
+    BT.clip.forEach(function (c) { var ns = s0 + c.ds, nr = r0 + c.dr; if (ns >= BT_STEPS || nr >= BT_ROWS) { lost++; return; } ng[ns * BT_ROWS + nr] = c.v; put++; });
+    BT.G = ng; btPop.hidden = true; btDraw(); btUiState();
+    toast(lost ? 'Notas coladas. Algumas passaram do limite da grade' : 'Notas coladas'); tk('beats_selecao', { acao: 'colar', notas: put });
+  }
+  function btMqSet(box) {
+    var x0 = Math.min(box.x0, box.x1), x1 = Math.max(box.x0, box.x1), y0 = Math.min(box.y0, box.y1), y1 = Math.max(box.y0, box.y1), out = [], s, r;
+    for (s = Math.max(0, Math.floor(x0 / BT_CW)); s <= Math.min(BT_STEPS - 1, Math.floor(x1 / BT_CW)); s++) for (r = 0; r < BT_ROWS; r++) {
+      var cy0 = BT_RULER + r * BT_CH, cy1 = cy0 + BT_CH;
+      if (BT.G[s * BT_ROWS + r] && cy0 < y1 && cy1 > y0 && s * BT_CW < x1 && (s + 1) * BT_CW > x0) out.push(s * BT_ROWS + r);
+    }
+    return out;
+  }
   BT.cv.addEventListener('pointerdown', function (e) {
-    if (e.button > 0 || DR) return;
-    var rc = BT.cv.getBoundingClientRect(), s = Math.floor((e.clientX - rc.left) / BT_CW), r = Math.floor((e.clientY - rc.top - BT_RULER) / BT_CH);
-    if (s < 0 || s >= BT_STEPS) return;
-    if (r >= 0 && r < BT_ROWS && BT.G[s * BT_ROWS + r]) return;
-    var id = e.pointerId, sx = e.clientX, sy = e.clientY, m = s >> 3, t = 0, fired = false;
-    function clean() { clearTimeout(t); window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); }
-    function mv(ev) { if (!fired && ev.pointerId === id && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 9) clean(); }
-    function up(ev) { if (ev.pointerId !== id) return; clean(); if (fired) setTimeout(function () { BT.noClick = false; }, 350); }
+    if (e.button > 0 || DR || BT.pinch || BT.paste) return;
+    var rc = BT.cv.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top, s = Math.floor(px / BT_CW), r = Math.floor((py - BT_RULER) / BT_CH);
+    if (s < 0 || s >= BT_STEPS || r < 0 || r >= BT_ROWS) return;
+    if (BT.G[s * BT_ROWS + r]) return;
+    var id = e.pointerId, touch = e.pointerType !== 'mouse', sx = e.clientX, sy = e.clientY, lx = sx, ly = sy, t = 0, armed = false, held = false, edge = 0, wr = $('#bt-wrap');
+    function clean() { clearTimeout(t); clearInterval(edge); window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); }
+    function upd() {
+      var r2 = BT.cv.getBoundingClientRect(), W = BT_STEPS * BT_CW, H = BT_RULER + BT_ROWS * BT_CH;
+      BT.mq = { x0: px, y0: py, x1: Math.max(0, Math.min(W, lx - r2.left)), y1: Math.max(BT_RULER, Math.min(H, ly - r2.top)) };
+      BT.msel = null; btDraw();
+    }
+    function arm() {
+      if (armed || BT.pinch || DR) { if (!armed) clean(); return; }
+      armed = true; MQ.on = true; BT.noClick = true; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (er) {} }
+      try { BT.cv.setPointerCapture(id); } catch (er) {}
+      btPop.hidden = true; BT.mq = { x0: px, y0: py, x1: px, y1: py };
+      /* perto da borda, a grade rola sozinha enquanto a caixa é esticada */
+      edge = setInterval(function () { var w = wr.getBoundingClientRect(); if (lx > w.right - 30) wr.scrollLeft += 12; else if (lx < w.left + 30) wr.scrollLeft -= 12; else return; upd(); }, 30);
+    }
+    function mv(ev) {
+      if (ev.pointerId !== id) return; lx = ev.clientX; ly = ev.clientY;
+      var d = Math.hypot(lx - sx, ly - sy);
+      if (!armed) { if (touch) { if (d > 9) clean(); return; } if (d > 6) { held = false; clearTimeout(t); arm(); } else return; }
+      upd();
+    }
+    function up(ev) {
+      if (ev.pointerId !== id) return; clean();
+      if (!armed && !held) return;
+      MQ.on = false; var box = BT.mq; BT.mq = null; var sel = box ? btMqSet(box) : [];
+      setTimeout(function () { BT.noClick = false; }, 350);
+      /* ficou pressionado sem arrastar: se há notas copiadas, oferece colar neste ponto */
+      if (held || !box || (Math.abs(box.x1 - box.x0) < 8 && Math.abs(box.y1 - box.y0) < 8)) {
+        BT.msel = null;
+        if (BT.clip.length) { BT.pasteAt = s; BT.pasteRow = r; BT.paste = false; btSelShow(); btDraw(); tk('beats_selecao', { acao: 'colar_aqui' }); }
+        else { btPop.hidden = true; btDraw(); toast('Para colar, selecione e copie notas primeiro'); }
+        return;
+      }
+      if (!sel.length) { BT.msel = null; btPop.hidden = true; btDraw(); toast('Nenhuma nota dentro da caixa'); return; }
+      BT.msel = sel; btSelShow(); btDraw(); tk('beats_selecao', { acao: 'selecionar', notas: sel.length });
+    }
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
-    t = setTimeout(function () {
-      if (BT.pinch || DR) { clean(); return; }
-      fired = true; BT.noClick = true; if (navigator.vibrate) { try { navigator.vibrate(14); } catch (er) {} }
-      var has = false, k; for (k = 0; k < 8 * BT_ROWS; k++) if (BT.G[m * 8 * BT_ROWS + k]) { has = true; break; }
-      if (!has) { toast('Esse compasso está vazio'); return; }
-      btSelOpen(m);
-    }, 450);
+    if (touch) t = setTimeout(arm, 320); else t = setTimeout(function () { if (!armed) { held = true; BT.noClick = true; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (er) {} } } }, 450);
   });
+
+  /* ---- duplicar compasso: botão ao lado do número de cada compasso, com confirmação e número de cópias ---- */
+  var DUP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15V6.2A2.2 2.2 0 0 1 7.2 4H16"/></svg>';
+  btDupBox = el('div', null, 'bt-dups'); $('#bt-wrap').appendChild(btDupBox);
+  function btDupBtns() {
+    var tot = btLen() / 8, m, b, has, k;
+    for (m = 0; m < BT_STEPS / 8; m++) {
+      b = btDupBox.children[m];
+      if (!b) { b = el('button', null, 'bt-dup'); b.type = 'button'; b.innerHTML = DUP_SVG; (function (mm) { b.addEventListener('click', function () { btDupAsk(mm); }); })(m); btDupBox.appendChild(b); }
+      has = false; if (m < tot) for (k = 0; k < 8 * BT_ROWS; k++) if (BT.G[m * 8 * BT_ROWS + k]) { has = true; break; }
+      b.hidden = !has; b.style.left = (m * 8 * BT_CW + 15) + 'px'; b.setAttribute('aria-label', 'Duplicar o compasso ' + (m + 1)); b.title = 'Duplicar o compasso ' + (m + 1);
+    }
+  }
+  function btDupDo(m, c) {
+    var S = 8 * BT_ROWS, ng = new Uint8Array(BT.G.length), i, w = $('#bt-wrap'), x0, x1;
+    btPush();
+    ng.set(BT.G.subarray(0, (m + 1) * S));
+    for (i = 0; i < c; i++) ng.set(BT.G.subarray(m * S, (m + 1) * S), (m + 1 + i) * S);
+    ng.set(BT.G.subarray((m + 1) * S, (BT_STEPS / 8 - c) * S), (m + 1 + c) * S);
+    BT.G = ng; btDraw(); btUiState();
+    x0 = (m + 1) * 8 * BT_CW; x1 = (m + 1 + c) * 8 * BT_CW; if (x1 > w.scrollLeft + w.clientWidth) w.scrollLeft = Math.max(0, x1 - w.clientWidth + 6);
+    toast(c === 1 ? 'Compasso duplicado' : c + ' cópias do compasso feitas'); tk('beats_compasso', { acao: 'duplicar', copias: c });
+  }
+  function btDupAsk(m) {
+    if (document.getElementById('confirm-modal')) return;
+    var tot = btLen() / 8, max = BT_STEPS / 8 - tot;
+    if (max < 1) { toast('O limite é de 8 compassos'); return; }
+    var n = 1, mod = el('div', null, ''); mod.id = 'confirm-modal'; mod.setAttribute('role', 'alertdialog'); mod.setAttribute('aria-modal', 'true'); mod.setAttribute('aria-labelledby', 'confirm-t');
+    var inner = el('div', null, 'inner'), t = el('h3', 'Duplicar o compasso ' + (m + 1) + '?', 'ov-title'); t.id = 'confirm-t'; inner.appendChild(t);
+    inner.appendChild(el('p', 'Quantas cópias você quer fazer? Elas entram logo depois dele.', 'ov-text mut'));
+    var row = el('div', null, 'dup-step'), cnt = el('b', '1', ''), info = el('p', '', 'ov-text mut');
+    var dn = btn('−', 'btn-ghost', function () { if (n > 1) { n--; upd(); } }), up = btn('+', 'btn-ghost', function () { if (n < max) { n++; upd(); } });
+    dn.setAttribute('aria-label', 'Menos uma cópia'); up.setAttribute('aria-label', 'Mais uma cópia'); cnt.setAttribute('aria-live', 'polite');
+    row.appendChild(dn); row.appendChild(cnt); row.appendChild(up); inner.appendChild(row); inner.appendChild(info);
+    function upd() { cnt.textContent = String(n); dn.disabled = n <= 1; up.disabled = n >= max; info.textContent = 'A música vai ficar com ' + (tot + n) + (tot + n === 1 ? ' compasso' : ' compassos') + ' (limite: ' + BT_STEPS / 8 + ').'; }
+    upd();
+    function close() { mod.remove(); document.removeEventListener('keydown', esc, true); }
+    function esc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
+    var ok = btn('Duplicar', 'btn-primary', function () { close(); btDupDo(m, n); });
+    inner.appendChild(ok); inner.appendChild(btn('Cancelar', 'btn-ghost btn-sm', close));
+    mod.appendChild(inner); document.body.appendChild(mod); document.addEventListener('keydown', esc, true);
+    setTimeout(function () { try { ok.focus(); } catch (e) {} }, 60);
+  }
 
   btPalette(); btDraw(); btUiState();
 
