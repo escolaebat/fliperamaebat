@@ -54,6 +54,7 @@ Nada pessoal é enviado: nem o nome digitado, nem o nome das obras. Se o navegad
 | `game_tutorial` | Abriu "Aprenda a jogar" | jogo |
 | `lab_open` | Atividades preferidas | atividade |
 | `lab_gravar`, `lab_salvar` | Gravou, salvou imagem ou vídeo | atividade, tipo |
+| `lab_abrir` | Abriu um projeto de beat salvo | atividade, tipo |
 | `lab_forma`, `lab_efeito`, `mixer_modo` | O que usam dentro das atividades | forma, efeito, modo |
 | `carta_aberta`, `carta_salvar`, `carta_compartilhar` | Engajamento com as cartas | origem (jogo ou atividade), tipo |
 | `link_externo` | Cliques em Instagram, TikTok, site da EBAT | só o domínio |
