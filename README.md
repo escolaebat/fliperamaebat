@@ -40,7 +40,7 @@ Nada pessoal é enviado: nem o nome digitado, nem o nome das obras. Se o navegad
 
 ## O que é medido
 
-**Telas** (aparecem como páginas visitadas, mostrando a navegação): `/jogos`, `/laboratorio`, `/sobre`, `/jogo/corre-criativo`, `/jogo/batalha-nave`, `/jogo/torre-criativa`, `/jogo/corrida-neon`, `/jogo/traco`, `/jogo/quebra-pixel`, `/laboratorio/oficina-de-vj`, `/laboratorio/binario-do-nome`, `/laboratorio/pixel-studio`, `/laboratorio/mixer-de-luz`.
+**Telas** (aparecem como páginas visitadas, mostrando a navegação): `/jogos`, `/laboratorio`, `/sobre`, `/jogo/corre-criativo`, `/jogo/batalha-nave`, `/jogo/corrida-neon`, `/jogo/traco`, `/jogo/quebra-pixel`, `/laboratorio/oficina-de-vj`, `/laboratorio/binario-do-nome`, `/laboratorio/pixel-studio`, `/laboratorio/mixer-de-luz`.
 
 **Eventos:**
 
