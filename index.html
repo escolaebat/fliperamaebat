@@ -192,12 +192,13 @@
   #home { overflow-y: auto; overflow-x: hidden; padding-bottom: 8px; touch-action: pan-y; }
   .chrow { position: relative; display: flex; align-items: center; justify-content: center; min-height: 30px; margin: 4px 0 18px; }
   .chrow .chancela { margin: 0; flex: 1; padding: 0 78px 0 0; font-size: 8.5px; letter-spacing: .14em; text-wrap: balance; text-align: left; }
-  .share-site { position: absolute; right: 0; top: 50%; transform: translateY(-50%); min-height: 30px; min-width: 0; padding: 5px 7px; --nc: #35C3FF; --ng: 53,195,255; }
+  .share-site { position: absolute; right: 0; top: 0; bottom: 0; margin: auto 0; height: max-content; min-height: 30px; min-width: 0; padding: 5px 7px; --nc: #35C3FF; --ng: 53,195,255; }
   .share-site.sfx-site { right: 38px; }
   /* botões do topo discretos: sem brilho de neon na borda */
   .chrow .chip { --nc: rgba(255,255,255,.2); border-width: 1.5px; box-shadow: none; text-shadow: none; background: rgba(12,8,34,.7); }
   .chrow .chip.icon[aria-pressed="false"] { --nc: rgba(255,255,255,.12); }
-  .share-site:active { transform: translateY(-50%) scale(.94); }
+  .chrow .share-site.chip.icon[aria-pressed="false"] { position: absolute; }
+  .share-site:active { transform: scale(.94); }
   .share-site svg { width: 14px; height: 14px; }
   .chancela { margin: 0 0 7px; font-family: 'Funnel Display', 'Inter', system-ui, sans-serif; font-weight: 400; font-size: 9px; line-height: 1.2; text-transform: uppercase; letter-spacing: .16em; color: rgba(228,220,247,.82); text-align: center; padding-left: .16em; }
   .sponsors { display: none; padding: 18px 4px 10px; }
@@ -690,9 +691,9 @@
 
   /* aba Sobre: bloco roxo bem escuro (30%) no fundo da página inteira, para destacar o texto; convite em destaque */
   .about { background: rgba(22,6,52,.6); border-radius: 14px; margin: 0 -12px; padding: 18px 24px 16px; }
-  .about p.invite { text-align: center; font-family: var(--f-display); font-weight: 400; font-size: 16.5px; line-height: 1.55; color: #fff; padding: 18px 4px 6px; margin-top: 8px; background: var(--inst) left top / 100% 2px no-repeat; text-wrap: balance; }
+  .about p.invite { text-align: center; font-family: var(--f-display); font-weight: 400; font-size: min(16.5px, 4.35vw); line-height: 1.55; color: #fff; padding: 18px 4px 6px; margin-top: 8px; background: var(--inst) left top / 100% 2px no-repeat; text-wrap: balance; }
   .about p.invite .inv-t { display: block; width: fit-content; max-width: 100%; margin: 4px auto 14px; box-sizing: border-box; }
-  .about p.invite b { color: #fff; white-space: nowrap; font-size: min(1em, 4.1vw); font-family: 'Chillax Bold', 'Chillax', sans-serif; font-weight: 700; }
+  .about p.invite b { color: #fff; white-space: nowrap; font-size: min(1em, 4.1vw); font-family: 'Chillax', 'Funnel Display', sans-serif; font-weight: 500; -webkit-text-stroke: .35px currentColor; }
 
   /* botões de forma e de efeito: só símbolos */
   .ico-btn { padding: 0; width: 46px; min-width: 46px; height: 44px; display: inline-flex; align-items: center; justify-content: center; }
@@ -804,7 +805,7 @@
         <div class="vibe"><span class="vibe-t">Feito com vibecoding</span></div>
         <p>Este projeto foi criado inteiramente com <b>inteligência artificial</b>, por meio do <b>vibecoding</b>: descreva a ideia com suas palavras e a IA escreve o código por você!</p>
         <p>Ficou com vontade de botar suas ideias em prática? Comece descrevendo sua ideia para a sua IA de preferência.</p>
-        <p class="invite"><span class="vibe-t inv-t">Gostou do que viu por aqui?</span>Venha aprender na<br><b>Escola Brasileira de Arte e Tecnologia</b><br>e crie seus próprios projetos!</p>
+        <p class="invite"><span class="vibe-t inv-t">Gostou do que viu por aqui?</span>Venha aprender a fazer aqui na<br><b>Escola Brasileira de Arte e Tecnologia.</b><br>Exerça sua criatividade e crie seus<br>próprios projetos com Inteligência<br>Artificial e outras novas tecnologias!</p>
       </section>
       <section class="rv">
         <h3>Conheça a EBAT</h3>
@@ -1455,8 +1456,16 @@
   /* ================= SOM ================= */
   var actx = null;
   function getCtx() { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended' && actx.resume) actx.resume(); return actx; }
-  /* o navegador só libera o áudio depois de um toque: destrava no primeiro gesto */
-  ['pointerdown', 'touchend', 'keydown', 'click'].forEach(function (n) { document.addEventListener(n, function () { try { getCtx(); } catch (e) {} }, { passive: true }); });
+  /* o navegador só libera o áudio com um gesto do usuário (toque, clique ou tecla; rolar a tela não vale): tenta já na abertura e destrava no primeiro gesto, em qualquer lugar da tela */
+  function unlockAudio() {
+    try {
+      var c = getCtx(); if (c.state !== 'running' && c.resume) { var r = c.resume(); if (r && r.catch) r.catch(function () {}); }
+      if (!c._ub) { c._ub = 1; var b = c.createBuffer(1, 1, 22050), sn = c.createBufferSource(); sn.buffer = b; sn.connect(c.destination); sn.start(0); }
+    } catch (e) {}
+  }
+  ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(function (n) { document.addEventListener(n, unlockAudio, { passive: true, capture: true }); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) unlockAudio(); });
+  try { getCtx(); } catch (e) {}
   function beep(f, d, type, vol, delay) {
     if (store.mute) return;
     try {
@@ -7277,13 +7286,28 @@
       var dl = c.createDelay(1), fb = c.createGain(), wl = c.createBiquadFilter(), wet = c.createGain();
       dl.delayTime.value = 0.34; fb.gain.value = 0.3; wl.type = 'lowpass'; wl.frequency.value = 1700; wet.gain.value = 0.38;
       A.sfx.connect(dl); dl.connect(wl); wl.connect(fb); fb.connect(dl); wl.connect(wet); wet.connect(lp);
+      /* sala ampla: reverb em estéreo (cauda escura e descorrelacionada entre as orelhas) que envolve o acorde e os sons que passam */
+      A.rv = c.createGain(); A.rv.gain.value = 1;
+      if (c.createConvolver) {
+        if (!A.ir || A.ir.sampleRate !== c.sampleRate) {
+          var rl = Math.round(c.sampleRate * 2.6), ch2, y, k, dd; A.ir = c.createBuffer(2, rl, c.sampleRate);
+          for (ch2 = 0; ch2 < 2; ch2++) { dd = A.ir.getChannelData(ch2); y = 0; for (i = 0; i < rl; i++) { k = 0.62 - 0.56 * (i / rl); y += ((Math.random() * 2 - 1) - y) * k; dd[i] = i < c.sampleRate * 0.018 ? 0 : y * Math.pow(1 - i / rl, 2.4) * 1.6; } }
+        }
+        var cv2 = c.createConvolver(), rvo = c.createGain(); cv2.buffer = A.ir; rvo.gain.value = 0.55; A.rv.connect(cv2); cv2.connect(rvo); rvo.connect(lp);
+        var rs = c.createGain(); rs.gain.value = 0.34; A.sfx.connect(rs); rs.connect(A.rv);
+      }
       /* filtro "digital" dos sons de vírus e ERRO */
       A.dg = c.createBiquadFilter(); A.dg.type = 'lowpass'; A.dg.frequency.value = 2400; A.dg.connect(A.sfx);
       /* acorde macio e luminoso (ré maior com sétima, depois sol, si menor e lá), que respira e troca devagar de um para o outro */
-      var bed = c.createGain(), bl = c.createBiquadFilter(); bl.type = 'lowpass'; bl.frequency.value = 760; bed.gain.value = 0.42; bl.connect(bed); bed.connect(lp);
+      var bed = c.createGain(), bl = c.createBiquadFilter(); bl.type = 'lowpass'; bl.frequency.value = 760; bed.gain.value = 0.42; bl.connect(bed); bed.connect(lp); if (A.rv) { var bs = c.createGain(); bs.gain.value = 0.5; bed.connect(bs); bs.connect(A.rv); }
       A.osc = []; A.ci = 0;
       [0.016, 0.013, 0.012, 0.0075].forEach(function (vol, k) {
-        var o = c.createOscillator(), g = c.createGain(); o.type = k === 1 || k === 2 ? 'triangle' : 'sine'; o.frequency.value = CHORDS[0][k]; g.gain.value = vol; o.connect(g); g.connect(bl); o.start(t); A.src.push(o); A.osc.push(o);
+        var o = c.createOscillator(), g = c.createGain(); o.type = k === 1 || k === 2 ? 'triangle' : 'sine'; o.frequency.value = CHORDS[0][k]; g.gain.value = vol; o.connect(g); o.start(t); A.src.push(o); A.osc.push(o); o.__k = k;
+        /* cada nota passeia devagar entre as orelhas, em ritmos diferentes, e o acorde ganha uma "sombra" levemente desafinada do outro lado */
+        if (c.createStereoPanner) {
+          var pn = c.createStereoPanner(), pl = c.createOscillator(), pg = c.createGain(); pn.pan.value = 0; pl.frequency.value = 0.021 + k * 0.011; pg.gain.value = k % 2 ? -0.75 : 0.75; pl.connect(pg); pg.connect(pn.pan); pl.start(t); A.src.push(pl); g.connect(pn); pn.connect(bl);
+          var o2 = c.createOscillator(), g2b = c.createGain(), pn2 = c.createStereoPanner(); o2.type = o.type; o2.frequency.value = CHORDS[0][k]; o2.detune.value = k % 2 ? -7 : 7; g2b.gain.value = vol * 0.55; pn2.pan.value = k % 2 ? 0.8 : -0.8; o2.connect(g2b); g2b.connect(pn2); pn2.connect(bl); o2.start(t); A.src.push(o2); A.osc.push(o2); o2.__k = k;
+        } else g.connect(bl);
         if (k === 3) { var lf = c.createOscillator(), lg = c.createGain(); lf.frequency.value = 0.06; lg.gain.value = vol * 0.9; lf.connect(lg); lg.connect(g.gain); lf.start(t); A.src.push(lf); }
       });
       A.nextCh = performance.now() + 9000;
@@ -7292,6 +7316,9 @@
       if (!A.nb || A.nb.sampleRate !== c.sampleRate) { A.nb = c.createBuffer(1, Math.round(c.sampleRate * 2), c.sampleRate); var d = A.nb.getChannelData(0); for (i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       var ns = c.createBufferSource(), nf = c.createBiquadFilter(), ng = c.createGain(); ns.buffer = A.nb; ns.loop = true; nf.type = 'bandpass'; nf.frequency.value = 800; nf.Q.value = 0.45; ng.gain.value = 0.006;
       ns.connect(nf); nf.connect(ng); ng.connect(lp); ns.start(t); A.src.push(ns);
+      if (c.createStereoPanner) { var ns2 = c.createBufferSource(), nf2 = c.createBiquadFilter(), ng2 = c.createGain(), np1 = c.createStereoPanner(), np2 = c.createStereoPanner(), ns3 = c.createBufferSource(), ng3 = c.createGain(); np1.pan.value = -0.9; np2.pan.value = 0.9;
+        ns2.buffer = A.nb; ns2.loop = true; nf2.type = 'bandpass'; nf2.frequency.value = 1100; nf2.Q.value = 0.4; ng2.gain.value = 0.004; ns2.connect(nf2); nf2.connect(ng2); ng2.connect(np1); np1.connect(lp); ns2.start(t, 0.7); A.src.push(ns2);
+        ns3.buffer = A.nb; ns3.loop = true; ns3.connect(nf2); ng3.gain.value = 0.004; nf2.connect(ng3); ng3.connect(np2); np2.connect(lp); ns3.start(t, 1.3); A.src.push(ns3); }
       var l2 = c.createOscillator(), l2g = c.createGain(); l2.frequency.value = 0.053; l2g.gain.value = 320; l2.connect(l2g); l2g.connect(nf.frequency); l2.start(t); A.src.push(l2);
       A.nextTw = performance.now() + 4000;
     }
@@ -7309,6 +7336,21 @@
       var c = A.c; if (!c.createStereoPanner) return A.sfx;
       var p = c.createStereoPanner(), t = c.currentTime; p.pan.setValueAtTime(aClamp(x / W * 2 - 1), t); if (x2 != null) p.pan.linearRampToValueAtTime(aClamp(x2 / W * 2 - 1), t + dur); p.connect(A.sfx); return p;
     }
+    /* som em 3D (HRTF): o ponto sai da posição na tela, pode contornar a cabeça e passar por trás; nos fones dá a sensação de estar dentro do espaço */
+    function aAz(x) { return aClamp((x == null ? W / 2 : x) / W * 2 - 1) / 0.85 * 78; }
+    function aSpace(x, x2, dur, y, wide, dest) {
+      var c = A.c, out = dest || A.sfx; if (!c.createPanner) return x2 != null ? aPan(x, x2, dur) : aPan(x, null);
+      var p = c.createPanner(), a0 = aAz(x), a1 = x2 != null ? aAz(x2) : a0, d = 1.3 + Math.random() * 0.9, el = y == null ? 0 : (0.5 - y / H) * 0.9 * d * 0.5, n = 24, i, f, a, X, Z, Y;
+      if (wide && x2 != null) a1 = Math.max(-165, Math.min(165, a1 * 1.9));
+      p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1; p.maxDistance = 20; p.rolloffFactor = 0.45;
+      if (dur > 0 && x2 != null && p.positionX && p.positionX.setValueCurveAtTime) {
+        X = new Float32Array(n); Z = new Float32Array(n); Y = new Float32Array(n);
+        for (i = 0; i < n; i++) { f = i / (n - 1); a = (a0 + (a1 - a0) * f) * Math.PI / 180; X[i] = d * Math.sin(a); Z[i] = -d * Math.cos(a); Y[i] = el; }
+        p.positionX.value = X[0]; p.positionY.value = Y[0]; p.positionZ.value = Z[0]; var t = c.currentTime;
+        p.positionX.setValueCurveAtTime(X, t, dur); p.positionZ.setValueCurveAtTime(Z, t, dur); p.positionY.setValueCurveAtTime(Y, t, dur);
+      } else { a = a0 * Math.PI / 180; if (p.positionX) { p.positionX.value = d * Math.sin(a); p.positionY.value = el; p.positionZ.value = -d * Math.cos(a); } else p.setPosition(d * Math.sin(a), el, -d * Math.cos(a)); }
+      p.connect(out); return p;
+    }
     /* sopro de ar filtrado que passa (filtro varrendo de f0 a f1) */
     function aSweep(out, f0, f1, d, vol, Q, delay, type) {
       var c = A.c, t = c.currentTime + (delay || 0), s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
@@ -7325,9 +7367,9 @@
       g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); s.connect(fl); fl.connect(g); g.connect(out); s.start(t, Math.random() * 1.5); s.stop(t + d + 0.02);
     }
     var VSC = [392, 440, 523.3, 587.3, 659.3, 784], BELL = [1174.7, 1318.5, 1480, 1760, 1976, 2217.5];
-    function chordNext() { if (!A.osc) return; var c = A.c, ch; A.ci = (A.ci + 1) % CHORDS.length; ch = CHORDS[A.ci]; A.osc.forEach(function (o, k) { try { o.frequency.setTargetAtTime(ch[k], c.currentTime, 1.6); } catch (e) {} }); A.nextCh = performance.now() + R(9000, 13000); }
+    function chordNext() { if (!A.osc) return; var c = A.c, ch; A.ci = (A.ci + 1) % CHORDS.length; ch = CHORDS[A.ci]; A.osc.forEach(function (o) { try { o.frequency.setTargetAtTime(ch[o.__k], c.currentTime, 1.6); } catch (e) {} }); A.nextCh = performance.now() + R(9000, 13000); }
     function twinkle() {
-      var f = BELL[Math.floor(Math.random() * BELL.length)], o = aPan(R(0.15, 0.85) * W, null);
+      var f = BELL[Math.floor(Math.random() * BELL.length)], xa = R(0.1, 0.9) * W, o = aSpace(xa, xa + R(-0.9, 0.9) * W, 2.4, R(0.1, 0.7) * H, true);
       aTone(o, 'sine', f, f, 2.2, 0.02, 0, 0.006); aTone(o, 'sine', f * 2.01, f * 2.01, 0.9, 0.006, 0, 0.004);
       if (Math.random() < 0.4) { var f2 = f * 1.2599; aTone(o, 'sine', f2, f2, 1.8, 0.014, 0.16, 0.006); }
       A.nextTw = performance.now() + R(4000, 9000);
@@ -7338,20 +7380,20 @@
       var c = A.c, k, n, o, d, x2, i, f;
       try {
         if (e.t === 'comet') {
-          d = e.col === '255,150,40' ? 2.6 : 2.0; x2 = e.x + e.vx * d; o = aPan(e.x, x2, d);
+          d = e.col === '255,150,40' ? 2.6 : 2.0; x2 = e.x + e.vx * d; o = aSpace(e.x, x2, d, e.y, true);
           if (e.col === '255,150,40') { aSweep(o, 900, 260, d, 0.075, 0.7); aTone(o, 'sine', 150, 80, d * 0.8, 0.02, 0.1, 0.5); aTick(o, 1400, 0.09, 0.012, 0.5); aTick(o, 900, 0.08, 0.01, 1.0); }
           else if (e.col === '53,195,255') { aSweep(o, 3000, 900, d, 0.05, 1.1); aTone(o, 'sine', 2600, 1300, 1.4, 0.009, 0.1, 0.25); }
           else if (e.col === '248,44,237') { aSweep(o, 2400, 700, d, 0.05, 0.9); aTone(o, 'sine', 1568, 1568, 1.1, 0.009, 0.15, 0.04); aTone(o, 'sine', 2093, 2093, 1.1, 0.007, 0.35, 0.04); }
           else { aSweep(o, 2000, 600, d * 0.9, 0.04, 0.8); aSweep(o, 1500, 450, d * 0.9, 0.032, 0.8, 0.28); aTone(o, 'triangle', 880, 660, 0.9, 0.006, 0.1, 0.2); }
         } else if (e.t === 'met') {
-          k = performance.now(); if (k - A.lastMet < 70 || Math.random() < 0.3) return; A.lastMet = k; o = aPan(e.x, e.x + e.vx * 0.5, 0.5);
+          k = performance.now(); if (k - A.lastMet < 70 || Math.random() < 0.3) return; A.lastMet = k; o = aSpace(e.x, e.x + e.vx * 0.5, 0.5, e.y, false);
           if (e.hd) { aSweep(o, 1500, 500, 0.55, 0.03, 0.8); } else aSweep(o, 6200 + Math.random() * 1200, 3000, 0.3, 0.02, 1.0, 0, 'bandpass');
         } else if (e.t === 'virus') {
-          o = aPan(e.x, e.x + e.vx * 3, 3); n = [Math.floor(Math.random() * 3) + 3, 0, 0]; n[1] = n[0] - 1 - (Math.random() < 0.5 ? 1 : 0); n[2] = Math.max(0, n[1] - 1);
-          for (i = 0; i < 3; i++) aTone(A.dg, 'square', VSC[n[i]], VSC[n[i]], 0.1, 0.011, i * 0.085, 0.004);
-          aTone(A.dg, 'square', VSC[n[2]] / 2, VSC[n[2]] / 2, 0.22, 0.006, 0.26, 0.01); e.ns = e.life + R(1.2, 2.2);
+          o = aSpace(e.x, e.x + e.vx * 3, 3, e.y, true, A.dg); n = [Math.floor(Math.random() * 3) + 3, 0, 0]; n[1] = n[0] - 1 - (Math.random() < 0.5 ? 1 : 0); n[2] = Math.max(0, n[1] - 1);
+          for (i = 0; i < 3; i++) aTone(o, 'square', VSC[n[i]], VSC[n[i]], 0.1, 0.011, i * 0.085, 0.004);
+          aTone(o, 'square', VSC[n[2]] / 2, VSC[n[2]] / 2, 0.22, 0.006, 0.26, 0.01); e.ns = e.life + R(1.2, 2.2);
         } else if (e.t === 'err') {
-          o = A.dg;
+          o = aSpace(e.x, null, 0, e.y, false, A.dg);
           if (e.txt.indexOf('404') >= 0) { aTone(o, 'triangle', 523.3, 523.3, 0.16, 0.014, 0, 0.008); aTone(o, 'triangle', 392, 392, 0.3, 0.014, 0.19, 0.008); }
           else if (e.txt === 'https://') { [700, 900, 1100, 1400].forEach(function (fq, j) { aTone(o, 'sine', fq, fq, 0.07, 0.009, j * 0.06, 0.004); }); aTick(o, 3200, 0.2, 0.006, 0.26); }
           else if (e.txt === ':/>') { aTone(o, 'sine', 620, 300, 0.3, 0.016, 0, 0.01); }
@@ -7362,7 +7404,7 @@
     }
     /* vírus: de vez em quando um tremor digital, no mesmo ritmo do "glitch" dele */
     function virusGlitch(e) {
-      var i, o = A.dg; for (i = 0; i < 3; i++) aTone(o, 'square', 250 + Math.random() * 1500, 0, 0.03, 0.005, i * 0.035, 0.002);
+      var i, o = e.x != null ? aSpace(e.x, null, 0, e.y, false, A.dg) : A.dg; for (i = 0; i < 3; i++) aTone(o, 'square', 250 + Math.random() * 1500, 0, 0.03, 0.005, i * 0.035, 0.002);
       aTick(o, 1800 + Math.random() * 3000, 0.05, 0.01, 0); e.ns = e.life + R(1.6, 3.2);
     }
     function ambTick() {
@@ -7370,7 +7412,8 @@
       if (A.up && ok && performance.now() > A.nextTw) { try { twinkle(); } catch (e) {} }
       if (A.up && ok && A.osc && performance.now() > A.nextCh) chordNext();
     }
-    setInterval(ambTick, 400);
+    var ambRz = 0; function ambRetry() { if (!actx || actx.state === 'running' || document.hidden || performance.now() < ambRz) return; ambRz = performance.now() + 2000; try { var r = actx.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {} }
+    setInterval(function () { ambRetry(); ambTick(); }, 400);
     function step(now) {
       var dt = Math.min(0.05, (now - lt) / 1000), i, e; lt = now;
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
@@ -7409,7 +7452,7 @@
       return oc.startRendering().then(function (b) {
         A.force = false; A.c = sv.c; A.out = sv.out; A.sfx = sv.sfx; A.dg = sv.dg; A.src = sv.src; A.up = sv.up;
         var d = b.getChannelData(0), e = b.getChannelData(1), pk = 0, sq = 0, i, pkR = 0; for (i = 0; i < d.length; i++) { pk = Math.max(pk, Math.abs(d[i])); pkR = Math.max(pkR, Math.abs(e[i])); sq += d[i] * d[i]; }
-        return { peak: pk, peakR: pkR, rms: Math.sqrt(sq / d.length), data: Array.prototype.slice.call(d, 0) };
+        var se = 0, sde = 0; for (i = 0; i < d.length; i++) { se += e[i] * e[i]; sde += d[i] * e[i]; } return { peak: pk, peakR: pkR, rms: Math.sqrt(sq / d.length), rmsR: Math.sqrt(se / d.length), corr: sde / Math.sqrt(sq * se + 1e-30), data: Array.prototype.slice.call(d, 0) };
       });
     }
     window.__sky = { up: function () { return A.up; }, off: ambOffline, snd: function (e) { skySound(e); }, vg: function (e) { virusGlitch(e); }, twk: function () { twinkle(); }, comet: function () { comet(); kick(); }, shower: function () { shower(); kick(); }, err: function () { spawnErr(); kick(); }, virus: function () { virus(); kick(); }, evs: function () { return evs; } };
